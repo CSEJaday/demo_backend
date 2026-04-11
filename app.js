@@ -1,11 +1,14 @@
 const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
+const Joi = require("joi");
+
 const app = express();
 app.use(express.static("public"));
+app.use(express.json());
 app.use(cors());
   
-  const storage = multer.diskStorage({
+  /*const storage = multer.diskStorage({
     destination: (req, file, cb) => {
       cb(null, "./public/images/");
     },
@@ -14,7 +17,18 @@ app.use(cors());
     },
   });
   
-  const upload = multer({ storage: storage });
+  const upload = multer({ storage });*/
+
+  /*const validateTestimonial = (testimonial) => {
+    const schema = Joi.object({
+      name: Joi.string().min(3).required(),
+      rating: Joi.number().min(0).max(5).required(),
+      date: Joi.string().required(),
+      text: Joi.string().min(1).required()
+    });
+  
+    return schema.validate(testimonial);
+  };*/
 
   let testimonials =
 
@@ -71,6 +85,42 @@ app.get("/api/testimonials/:id", (req,res)=>{
     const testimonial =testimonials.find((t)=>t.id===parseInt(req.params.id));
     res.send(testimonial);
 });
+
+app.post("/api/testimonials", (req,res)=>{
+    console.log("In post request");
+    console.log(req.body);
+    const result = validateTestimonial(req.body);
+
+    if(result.error){
+        console.log("Error in validation");
+        res.status(400).send(result.error.details[0].message);
+        return;
+    }
+    console.log("Passed Validation!");
+
+    const testimonial = {
+        _id: testimonials.length + 1,
+        name:req.body.name,
+        rating:Number(req.body.rating),
+        date:req.body.date,
+        text:req.body.text
+    };
+
+    testimonials.push(testimonial);
+    res.status(201).send(testimonial);
+});
+
+const validateTestimonial = (testimonial) => {
+    const schema = Joi.object({
+        _id: Joi.allow(""),
+        name:Joi.string().min(3).required(),
+        rating:Joi.number().min(0).max(5).required(),
+        date:Joi.string().required(),
+        text:Joi.string().required()
+    });
+
+    return schema.validate(testimonial);
+};
 //listen for incoming requests
 app.listen(3001, ()=> {
     console.log("Server is up and running");

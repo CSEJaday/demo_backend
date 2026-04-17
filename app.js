@@ -56,7 +56,6 @@ app.use(cors());
     }
   ]
 
-//start here
 const getTestimonialId = (t) => t.id || t._id;
 
 app.get("/api/testimonials", (req,res)=>{

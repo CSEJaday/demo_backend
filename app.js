@@ -8,27 +8,6 @@ app.use(express.static("public"));
 app.use(express.json());
 app.use(cors());
   
-  /*const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-      cb(null, "./public/images/");
-    },
-    filename: (req, file, cb) => {
-      cb(null, file.originalname);
-    },
-  });
-  
-  const upload = multer({ storage });*/
-
-  /*const validateTestimonial = (testimonial) => {
-    const schema = Joi.object({
-      name: Joi.string().min(3).required(),
-      rating: Joi.number().min(0).max(5).required(),
-      date: Joi.string().required(),
-      text: Joi.string().min(1).required()
-    });
-  
-    return schema.validate(testimonial);
-  };*/
 
   let testimonials =
 
@@ -77,12 +56,22 @@ app.use(cors());
     }
   ]
 
+//start here
+const getTestimonialId = (t) => t.id || t._id;
+
 app.get("/api/testimonials", (req,res)=>{
     res.send(testimonials)
 });
 
 app.get("/api/testimonials/:id", (req,res)=>{
-    const testimonial =testimonials.find((t)=>t.id===parseInt(req.params.id));
+    const testimonial = testimonials.find(
+        (t) => getTestimonialId(t) === parseInt(req.params.id)
+    );
+
+    if (!testimonial) {
+        return res.status(404).send("Testimonial not found");
+    }
+
     res.send(testimonial);
 });
 
@@ -99,20 +88,57 @@ app.post("/api/testimonials", (req,res)=>{
     console.log("Passed Validation!");
 
     const testimonial = {
-        _id: testimonials.length + 1,
-        name:req.body.name,
-        rating:Number(req.body.rating),
-        date:req.body.date,
-        text:req.body.text
+        id: testimonials.length + 1,
+        name: req.body.name,
+        rating: Number(req.body.rating),
+        date: req.body.date,
+        text: req.body.text
     };
 
     testimonials.push(testimonial);
     res.status(201).send(testimonial);
 });
 
+app.put("/api/testimonials/:id", (req, res) => {
+    console.log("PUT HIT:", req.params.id);
+    const testimonial = testimonials.find(
+      (t) => getTestimonialId(t) === parseInt(req.params.id)
+    );
+
+    if (!testimonial) {
+      return res.status(404).send("Testimonial not found");
+    }
+
+    const result = validateTestimonial(req.body);
+
+    if (result.error) {
+      return res.status(400).send(result.error.details[0].message);
+    }
+
+    testimonial.name = req.body.name;
+    testimonial.rating = Number(req.body.rating);
+    testimonial.date = req.body.date;
+    testimonial.text = req.body.text;
+
+    res.send(testimonial);
+});
+  
+  app.delete("/api/testimonials/:id", (req, res) => {
+    const testimonialIndex = testimonials.findIndex(
+      (t) => getTestimonialId(t) === parseInt(req.params.id)
+    );
+  
+    if (testimonialIndex === -1) {
+      return res.status(404).send("Testimonial not found");
+    }
+  
+    const deleted = testimonials.splice(testimonialIndex, 1);
+    res.send(deleted[0]);
+  });
+
 const validateTestimonial = (testimonial) => {
     const schema = Joi.object({
-        _id: Joi.allow(""),
+        id: Joi.allow(""),
         name:Joi.string().min(3).required(),
         rating:Joi.number().min(0).max(5).required(),
         date:Joi.string().required(),
@@ -122,7 +148,9 @@ const validateTestimonial = (testimonial) => {
     return schema.validate(testimonial);
 };
 //listen for incoming requests
-app.listen(3001, ()=> {
+
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, ()=> {
     console.log("Server is up and running");
 });
 

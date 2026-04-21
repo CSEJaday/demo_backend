@@ -1,13 +1,27 @@
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
 const Joi = require("joi");
-
+const mongoose = require("mongoose");
 const app = express();
 app.use(express.static("public"));
 app.use(express.json());
 app.use(cors());
   
+mongoose
+    .connect(process.env.MONGODB_URI)
+    .then(() => console.log("Connected to mongodb..."))
+    .catch((err) => console.error("could not connect ot mongodb...", err));
+
+const testSchema = new mongoose.Schema({
+    name:String,
+    rating:Number,
+    date:String,
+    text:String
+});
+
+const Testimonial = mongoose.model("Testimonial", testSchema);
 
   let testimonials =
 
@@ -19,53 +33,17 @@ app.use(cors());
       "date": "June 9, 2025",
       "text": "Excellent service, reasonable prices and courteous crew! Definitely recommend."
     },
-    {
-      "id": 2,
-      "name": "Randy Brown",
-      "rating": 5,
-      "date": "July 4, 2024",
-      "text": "Thank you for helping make our event a success. Quality service and product!"
-    },
-    {
-      "id": 3,
-      "name": "James Rice",
-      "rating": 5,
-      "date": "May 15, 2025",
-      "text": "Very professional and punctual. The tent setup was flawless and exactly what we asked for."
-    },
-    {
-      "id": 4,
-      "name": "Tim Lance",
-      "rating": 5,
-      "date": "June 9, 2025",
-      "text": "Excellent service, reasonable prices and courteous crew! Definitely recommend."
-    },
-    {
-      "id": 5,
-      "name": "Sam Truth",
-      "rating": 5,
-      "date": "August 1, 2024",
-      "text": "Great communication and a smooth setup. Our guests loved the space."
-    },
-    {
-      "id": 6,
-      "name": "Alyssa Moore",
-      "rating": 5,
-      "date": "September 20, 2024",
-      "text": "Highly recommend MVP Tents — friendly crew, clean equipment, and on-time delivery."
-    }
   ]
 
 const getTestimonialId = (t) => t.id || t._id;
 
-app.get("/api/testimonials", (req,res)=>{
+app.get("/api/testimonials", async(req,res)=>{
+    const testimonials = await Testimonial.find();
     res.send(testimonials)
 });
 
-app.get("/api/testimonials/:id", (req,res)=>{
-    const testimonial = testimonials.find(
-        (t) => getTestimonialId(t) === parseInt(req.params.id)
-    );
+app.get("/api/testimonials/:id", async(req,res)=>{
+    const testimonial = Testimonial.findById(req.params.id);
 
     if (!testimonial) {
         return res.status(404).send("Testimonial not found");
@@ -74,65 +52,58 @@ app.get("/api/testimonials/:id", (req,res)=>{
     res.send(testimonial);
 });
 
-app.post("/api/testimonials", (req,res)=>{
+app.post("/api/testimonials", async (req,res)=>{
     console.log("In post request");
-    console.log(req.body);
     const result = validateTestimonial(req.body);
 
     if(result.error){
         console.log("Error in validation");
         res.status(400).send(result.error.details[0].message);
-        return;
     }
     console.log("Passed Validation!");
 
-    const testimonial = {
-        id: testimonials.length + 1,
+    const testimonial = new Testimonial ({
         name: req.body.name,
         rating: Number(req.body.rating),
         date: req.body.date,
         text: req.body.text
-    };
+    });
 
-    testimonials.push(testimonial);
+    const newTestimonial = await testimonial.save();
     res.status(201).send(testimonial);
 });
 
-app.put("/api/testimonials/:id", (req, res) => {
-    console.log("PUT HIT:", req.params.id);
-    const testimonial = testimonials.find(
-      (t) => getTestimonialId(t) === parseInt(req.params.id)
-    );
-
-    if (!testimonial) {
-      return res.status(404).send("Testimonial not found");
-    }
-
+app.put("/api/testimonials/:id", async (req, res) => {
     const result = validateTestimonial(req.body);
 
     if (result.error) {
       return res.status(400).send(result.error.details[0].message);
     }
 
-    testimonial.name = req.body.name;
-    testimonial.rating = Number(req.body.rating);
-    testimonial.date = req.body.date;
-    testimonial.text = req.body.text;
+    const fieldsToUpdate = {
+      name: req.body.name,
+      rating: Number(req.body.rating),
+      date: req.body.date,
+      text: req.body.text
+    };
 
-    res.send(testimonial);
+    const success = await Testimonial.updateOne({_id:req.params.id}, fieldsToUpdate);
+    if(!success) {
+        res.status(404).send("We couldnt find the review");
+    } else {
+        const testimonial = await Testimonial.findById(req.params.id);
+        res.status(200).send(testimonial);
+    }
 });
   
-  app.delete("/api/testimonials/:id", (req, res) => {
-    const testimonialIndex = testimonials.findIndex(
-      (t) => getTestimonialId(t) === parseInt(req.params.id)
-    );
-  
-    if (testimonialIndex === -1) {
+  app.delete("/api/testimonials/:id", async(req, res) => {
+    const testimonial = await Testimonial.findByIdAndDelete(req.params.id);
+   
+    if (!testimonial) {
       return res.status(404).send("Testimonial not found");
     }
   
-    const deleted = testimonials.splice(testimonialIndex, 1);
-    res.send(deleted[0]);
+    res.status(200).send(testimonial);
   });
 
 const validateTestimonial = (testimonial) => {

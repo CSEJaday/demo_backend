@@ -23,19 +23,7 @@ const testSchema = new mongoose.Schema({
 
 const Testimonial = mongoose.model("Testimonial", testSchema);
 
-  let testimonials =
-
-  [
-    {
-      "id": 1,
-      "name": "Hannah Kennedy",
-      "rating": 5,
-      "date": "June 9, 2025",
-      "text": "Excellent service, reasonable prices and courteous crew! Definitely recommend."
-    },
-  ]
-
-const getTestimonialId = (t) => t.id || t._id;
+//const getTestimonialId = (t) => t.id || t._id;
 
 app.get("/api/testimonials", async (req, res) => {
     try {
@@ -129,6 +117,18 @@ const validateTestimonial = (testimonial) => {
 };
 //listen for incoming requests
 
+app.post("/api/testimonials/seed", async (req, res) => {
+    const testimonial = new Testimonial({
+      name: "Hannah Kennedy",
+      rating: 5,
+      date: "June 9, 2025",
+      text: "Excellent service, reasonable prices and courteous crew! Definitely recommend."
+    });
+  
+    await testimonial.save();
+    res.send("Seeded");
+  });
+  
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, ()=> {
     console.log("Server is up and running");

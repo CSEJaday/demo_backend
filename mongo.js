@@ -12,7 +12,7 @@ http
 
   //testdb is name of database, it will automatically make it
   mongoose
-    .connect("mongodb+srv://jadany:Jyoung2005!@tentproject.eux8uwe.mongodb.net/")
+    .connect("mongodb+srv://jadany:kSffwUFMuMcPGWhh@tentproject.eux8uwe.mongodb.net/tentDB?retryWrites=true&w=majority")
     .then(() => console.log("Connected to mongodb..."))
     .catch((err) => console.error("could not connect ot mongodb...", err));
   

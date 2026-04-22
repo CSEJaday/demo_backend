@@ -43,7 +43,7 @@ app.get("/api/testimonials", async(req,res)=>{
 });
 
 app.get("/api/testimonials/:id", async(req,res)=>{
-    const testimonial = Testimonial.findById(req.params.id);
+    const testimonial = await Testimonial.findById(req.params.id);
 
     if (!testimonial) {
         return res.status(404).send("Testimonial not found");
@@ -58,7 +58,7 @@ app.post("/api/testimonials", async (req,res)=>{
 
     if(result.error){
         console.log("Error in validation");
-        res.status(400).send(result.error.details[0].message);
+        return res.status(400).send(result.error.details[0].message);
     }
     console.log("Passed Validation!");
 
@@ -70,7 +70,7 @@ app.post("/api/testimonials", async (req,res)=>{
     });
 
     const newTestimonial = await testimonial.save();
-    res.status(201).send(testimonial);
+    res.status(201).send(newTestimonial);
 });
 
 app.put("/api/testimonials/:id", async (req, res) => {

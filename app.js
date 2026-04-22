@@ -37,30 +37,40 @@ const Testimonial = mongoose.model("Testimonial", testSchema);
 
 const getTestimonialId = (t) => t.id || t._id;
 
-app.get("/api/testimonials", async(req,res)=>{
-    const testimonials = await Testimonial.find();
-    res.send(testimonials)
-});
-
-app.get("/api/testimonials/:id", async(req,res)=>{
-    const testimonial = await Testimonial.findById(req.params.id);
-
-    if (!testimonial) {
-        return res.status(404).send("Testimonial not found");
+app.get("/api/testimonials", async (req, res) => {
+    try {
+      const testimonials = await Testimonial.find();
+      res.send(testimonials);
+    } catch (err) {
+      console.error("GET /api/testimonials failed:", err);
+      res.status(500).send("Server error getting testimonials");
     }
+  });
 
-    res.send(testimonial);
-});
+  app.get("/api/testimonials/:id", async (req, res) => {
+    try {
+      const testimonial = await Testimonial.findById(req.params.id);
+  
+      if (!testimonial) {
+        return res.status(404).send("Testimonial not found");
+      }
+  
+      res.send(testimonial);
+    } catch (err) {
+      console.error("GET /api/testimonials/:id failed:", err);
+      res.status(500).send("Server error getting testimonial");
+    }
+  });
 
 app.post("/api/testimonials", async (req,res)=>{
     console.log("In post request");
     const result = validateTestimonial(req.body);
 
     if(result.error){
-        console.log("Error in validation");
+        //console.log("Error in validation");
         return res.status(400).send(result.error.details[0].message);
     }
-    console.log("Passed Validation!");
+    //console.log("Passed Validation!");
 
     const testimonial = new Testimonial ({
         name: req.body.name,
